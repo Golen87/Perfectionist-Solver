@@ -76,4 +76,5 @@ def solve_with_dijkstra(board):
             lost_points = next_board.lost_points
             next_hash = update_hash(current_hash, move)
             if next_hash not in visited:
+                visited.add(next_hash)
                 heapq.heappush(queue, (lost_points, next_hash, current_board))
