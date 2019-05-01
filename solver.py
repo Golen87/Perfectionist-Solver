@@ -85,9 +85,20 @@ class Board:
 			self.tile_count -= 1
 
 		if self.tile_count == 1:
-			self.lost += self.board[y2][x2]
-			self.board[y2][x2] = 0
-			self.tile_count -= 1
+			# Remove random number remaining
+			if v1 == v2:
+				for dy in range(self.HEIGHT):
+					for dx in range(self.WIDTH):
+						if self.board[dy][dx]:
+							self.lost += self.board[dy][dx]
+							self.board[dy][dx] = 0
+							self.tile_count -= 1
+							return
+			# Remove selected number remaining
+			else:
+				self.lost += self.board[y2][x2]
+				self.board[y2][x2] = 0
+				self.tile_count -= 1
 
 	# Returns possible moves from x,y
 	def get_moves_at(self, x, y, verbose):
