@@ -70,9 +70,9 @@ class Board:
 		v2 = self.board[y2][x2]
 
 		if x1 != x2 and y1 != y2 and v1 != 1 and self.tile_count > 10:
-			raise Exception("Invalid move")
+			raise Exception("Invalid move (not aligned)")
 		if v1 == 0 or v2 == 0:
-			raise Exception("Invalid move")
+			raise Exception("Invalid move (zero)")
 
 		if v1 == v2:
 			self.board[y1][x1] = 0
@@ -146,9 +146,9 @@ board = Board(example_1.board)
 def cheat_solve():
 	sol = example_1.good_solution
 	while sol:
-		pos1, pos2 = sol.pop(0)
-		board.print_board(pos1, pos2)
-		board.make_move(pos1, pos2)
+		move = sol.pop(0)
+		board.print_board(*move)
+		board.make_move(*move)
 		print('-'*board.WIDTH*3, board.lost)
 
 def greedy_solve():
@@ -156,9 +156,10 @@ def greedy_solve():
 		moves = board.get_all_moves()
 		# Sort by lowest cost, highest value
 		moves.sort(key=lambda move: (board.get_move_cost(move), -board.get_value(move[0])))
-		pos1, pos2 = moves[0]
-		board.print_board(pos1, pos2)
-		board.make_move(pos1, pos2)
+		move = moves[0]
+
+		board.print_board(*move)
+		board.make_move(*move)
 		print('-'*board.WIDTH*3, board.lost)
 
 #cheat_solve()
