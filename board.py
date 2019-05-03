@@ -29,6 +29,9 @@ class Board:
 		new.number_count = self.number_count
 		return new
 
+	def hash(self):
+		return hash( tuple(tuple(row) for row in self.board) )
+
 	def serialize(self):
 		return (
 			self.board,
@@ -123,9 +126,12 @@ class Board:
 				self.tile_count -= 1
 
 	# Returns possible moves from x,y
-	def get_moves_at(self, x, y, verbose):
+	def get_moves_at(self, x, y, remove_dups=False):
 		moves = []
 		v = self.board[y][x]
+
+		def dup_check(x, y, dx, dy):
+			return remove_dups and self.board[y][x] == self.board[dy][dx] and (x,y) < (dx,dy)
 
 		if v == 0:
 			return None
@@ -136,7 +142,7 @@ class Board:
 				for dx in range(self.width):
 					if (x != dx or y != dy):
 						if self.board[dy][dx] > 0:
-							if not v == self.board[dy][dx] == 1:
+							if not dup_check(x, y, dx, dy):
 								moves.append( ((x,y), (dx,dy)) )
 
 		# Find 4 neighbouring moves
@@ -146,22 +152,32 @@ class Board:
 				dy = y + d[1]
 				while self.is_inside(dx, dy):
 					if self.board[dy][dx] > 0:
-						moves.append( ((x,y), (dx,dy)) )
+						if not dup_check(x, y, dx, dy):
+							moves.append( ((x,y), (dx,dy)) )
 						break
 					dx += d[0]
 					dy += d[1]
 
-		#moves = [move for move in moves if self.get_move_cost(move) < 5]
 		return moves
 
 	# Returns all available moves on the board
-	def get_all_moves(self, verbose=False):
+	def get_all_moves(self):
 		all_moves = []
 		for y in range(self.height):
 			for x in range(self.width):
-				moves = self.get_moves_at(x, y, verbose)
+				moves = self.get_moves_at(x, y, True)
 				if moves:
 					all_moves += moves
+		return all_moves
+
+	# Returns moves to be searched on the board
+	def get_search_moves(self):
+		all_moves = self.get_all_moves()
+
+		lowest_cost = 15
+		for move in all_moves:
+			lowest_cost = min(lowest_cost, self.get_move_cost(move))
+		all_moves = [move for move in all_moves if self.get_move_cost(move) <= lowest_cost + 4]
 		return all_moves
 
 	# Returns cost of a move
@@ -174,3 +190,22 @@ class Board:
 		if v1 == v2:
 			return 0
 		return min(v1, v2)
+
+	# Returns the minimum remaining cost, if all tiles were magically aligned
+	# TODO: Improve
+	def get_heuristic(self):
+		values = [self.board[y][x] for x in range(self.width) for y in range(self.height)]
+		values.sort(reverse=True)
+
+		prev = None
+		lost = 0
+		for value in values:
+			if prev is None:
+				prev = value
+			else:
+				lost += prev - value
+				prev = None
+		if prev:
+			lost += prev
+
+		return lost + self.lost_points

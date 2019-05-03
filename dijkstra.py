@@ -44,6 +44,19 @@ def update_hash(current_hash, move):
 	return (current_hash + serialize_move(move)) % LARGE_PRIME
 
 
+def debug_print(board, moves, queue, show=True):
+	l = board.lost_points
+	p = board.punishment
+	g = board.get_heuristic()
+
+	if show:
+		board.print_board()
+	print('-'*board.width*3, "Bad:{} ({}/{}/{}) Mov:{} Que:{}".format(
+		l+p+g, l, p, g, len(moves), len(queue)
+	))
+	if show:
+		print()
+
 def solve_with_dijkstra(board):
 	'''Solves using Dijkstras algorithm.
 
@@ -62,6 +75,7 @@ def solve_with_dijkstra(board):
 	heapq.heapify(queue)
 	heapq.heappush(queue, (0, get_initial_hash(), board.serialize()))
 	visited = set()
+	iterations = 0
 
 	while queue:
 		lost_points, current_hash, current_board_tuple = heapq.heappop(queue)
@@ -71,29 +85,28 @@ def solve_with_dijkstra(board):
 
 		current_board = Board()
 		current_board.deserialize(current_board_tuple)
-		moves = current_board.get_all_moves()
+		moves = current_board.get_search_moves()
+
+		if current_board.tile_count == 0:
+			debug_print(current_board, moves, queue)
+			print("Victory!", current_board.lost_points)
+			break
 
 		#if current_board.pieces_left <= 10:
 		#	solve_less_than_10_board(board)
 		#	continue
 
-		if len(queue) % 100 == 0:
-			current_board.print_board()
-			print('-'*current_board.width*3, "Bad:{} ({}/{}) Mov:{} Que:{}".format(
-				current_board.lost_points + current_board.punishment,
-				current_board.lost_points,
-				current_board.punishment,
-				len(moves),
-				len(queue)
-			))
-			print()
+		iterations += 1
+		if iterations % 100 == 0:
+			debug_print(current_board, moves, queue)
 
 		for move in moves:
 			next_board = current_board.create_copy()
 			next_board.make_move(move)
 
-			lost_points = next_board.lost_points + next_board.punishment
-			next_hash = update_hash(current_hash, move)
+			lost_points = next_board.lost_points + next_board.get_heuristic() + next_board.punishment
+			#next_hash = update_hash(current_hash, move)
+			next_hash = next_board.hash()
 			if next_hash not in visited:
 				heapq.heappush(queue, (lost_points, next_hash, next_board.serialize()))
 
