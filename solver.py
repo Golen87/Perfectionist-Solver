@@ -1,12 +1,11 @@
 import colors
-import example_1, example_2, example_3
+import example_1, example_2, example_3, example_4
 from board import Board
 
-
-board = Board(example_3.board)
+board = Board(example_4.board)
 
 def cheat_solve():
-	sol = example_3.good_solution
+	sol = example_4.good_solution
 	while sol:
 		move = sol.pop(0)
 		board.print_board(*move)
