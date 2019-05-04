@@ -1,11 +1,10 @@
 import colors
-import example_1, example_2, example_3, example_4
+import example_1, example_2, example_3, example_4, example_5
 from board import Board
 
 board = Board(example_4.board)
 
-def cheat_solve():
-	sol = example_4.good_solution
+def cheat_solve(board, sol):
 	while sol:
 		move = sol.pop(0)
 		board.print_board(*move)
@@ -15,9 +14,16 @@ def cheat_solve():
 def greedy_solve():
 	while board.tile_count > 0:
 		moves = board.get_all_moves()
+
+		for i in range(len(moves)):
+			temp = board.create_copy()
+			temp.make_move(moves[i])
+			moves[i] = (moves[i], temp.get_heuristic())
+		moves.sort(key=lambda move: move[1])
+
 		# Sort by lowest cost, highest value
-		moves.sort(key=lambda move: (board.get_move_cost(move), -board.get_value(move[0])))
-		move = moves[0]
+		#moves.sort(key=lambda move: (board.get_move_cost(move), -board.get_value(move[0])))
+		move = moves[0][0]
 
 		board.print_board(*move)
 		board.make_move(move)
@@ -76,6 +82,6 @@ def greedy_depth_solve():
 		print('-'*board.width*3, board.lost_points)
 
 if __name__ == "__main__":
-	cheat_solve()
+	cheat_solve(board, example_4.good_solution)
 	#greedy_solve()
 	#greedy_depth_solve()

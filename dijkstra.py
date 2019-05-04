@@ -1,47 +1,9 @@
 '''Dijkstra solution for perfectionist game.'''
 
 from board import Board
-import example_1, example_2, example_3
-import heapq
-import time
-
-"""
-def solve_less_than_10_board(board):
-	'''Solves a board with less than 10 pieces left.'''
-	return
-
-def get_heuristics_move_for_board(board):
-	'''A function that returns moves for a board according to clever heauristics.'''
-	# TODO(Use smart heuristics here...)
-	return []
-
-def get_every_move_for_board(board):
-	'''Returns every move of a board.'''
-	# TODO(Maybe implement? Not sure if worth it...)
-	return []
-
-def get_moves_for_board(board):
-	'''Returns the moves for a board.'''
-	# Here we will need to do some form of heauristics, anything else is simply
-	# not going to work. Getting every move is too damn expensive....
-
-	#return get_heuristics_move_for_board(board)
-	return get_every_move_for_board(board)
-"""
-
-def get_initial_hash():
-	'''Returns the initial rolling hash.'''
-	return 0
-
-def serialize_move(move):
-	'''Serializes a move.'''
-	return hash(move)
-
-
-LARGE_PRIME = 2**61 - 1
-def update_hash(current_hash, move):
-	'''Returns the updated rolling hash from the given move.'''
-	return (current_hash + serialize_move(move)) % LARGE_PRIME
+import example_1, example_2, example_3, example_4, example_5
+import solver, colors
+import heapq, pprint
 
 
 def debug_print(board, moves, queue, show=True):
@@ -73,9 +35,10 @@ def solve_with_dijkstra(board):
 	'''
 	queue = []
 	heapq.heapify(queue)
-	heapq.heappush(queue, (0, get_initial_hash(), board.serialize()))
+	heapq.heappush(queue, (0, 0, board.serialize()))
 	visited = set()
 	iterations = 0
+	lowest_score = 1000
 
 	while queue:
 		lost_points, current_hash, current_board_tuple = heapq.heappop(queue)
@@ -87,30 +50,42 @@ def solve_with_dijkstra(board):
 		current_board.deserialize(current_board_tuple)
 		moves = current_board.get_search_moves()
 
-		if current_board.tile_count == 0:
+		# Check if board is complete
+		if current_board.tile_count == 0 and current_board.lost_points < lowest_score:
+			lowest_score = current_board.lost_points
 			debug_print(current_board, moves, queue)
-			print("Victory!", current_board.lost_points)
-			break
+			pprint.pprint(current_board.moves)
+			print(colors.add("Victory!", colors.B_YEL), current_board.lost_points)
+			print()
+			#solver.cheat_solve(board, current_board.moves)
+			visited.remove(current_hash)
+			continue
 
-		#if current_board.pieces_left <= 10:
-		#	solve_less_than_10_board(board)
-		#	continue
-
+		# Occasional debug printing
 		iterations += 1
-		if iterations % 100 == 0:
+		if iterations % 1000 == 0:
 			debug_print(current_board, moves, queue)
 
+		# Add all possible moves to the queue
 		for move in moves:
 			next_board = current_board.create_copy()
 			next_board.make_move(move)
 
-			lost_points = next_board.lost_points + next_board.get_heuristic() + next_board.punishment
-			#next_hash = update_hash(current_hash, move)
+			# Cost calculations
+			lost_points = next_board.lost_points
+			#lost_points += next_board.get_heuristic()
+			#lost_points += next_board.punishment
+			lost_points += next_board.tile_count # Not optimal, but fast
+
 			next_hash = next_board.hash()
 			if next_hash not in visited:
 				heapq.heappush(queue, (lost_points, next_hash, next_board.serialize()))
 
 
 if __name__ == "__main__":
-	board = Board(example_1.board)
+	board = Board(example_4.board)
+
+	print(colors.add("Start position:", colors.B_GRE))
+	debug_print(board, [], [])
+
 	solve_with_dijkstra(board)
