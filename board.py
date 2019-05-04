@@ -8,7 +8,11 @@ class Board:
 			self.height = len(new_board)
 			self.board = new_board
 
-			self.tile_count = self.width * self.height
+			self.tile_count = sum([
+				self.board[y][x] > 0
+				for y in range(self.height)
+				for x in range(self.width)
+			])
 			self.lost_points = 0
 			self.punishment = 0
 			self.number_count = sum([
@@ -16,6 +20,7 @@ class Board:
 				for y in range(self.height)
 				for x in range(self.width)
 			])
+			self.moves = []
 
 	# Clones to a new board
 	def create_copy(self):
@@ -27,6 +32,7 @@ class Board:
 		new.lost_points = self.lost_points
 		new.punishment = self.punishment
 		new.number_count = self.number_count
+		new.moves = self.moves[:]
 		return new
 
 	def hash(self):
@@ -39,6 +45,7 @@ class Board:
 			self.lost_points,
 			self.punishment,
 			self.number_count,
+			self.moves,
 		)
 
 	def deserialize(self, board_tuple):
@@ -47,6 +54,7 @@ class Board:
 		self.lost_points = board_tuple[2]
 		self.punishment = board_tuple[3]
 		self.number_count = board_tuple[4]
+		self.moves = board_tuple[5]
 
 		self.width = len(self.board[0])
 		self.height = len(self.board)
@@ -91,10 +99,13 @@ class Board:
 		if v1 == 0 or v2 == 0:
 			raise Exception("Invalid move (zero)")
 
+		self.moves.append(move)
+
 		if v1 == v2:
 			self.board[y1][x1] = 0
 			self.board[y2][x2] = 0
 			self.tile_count -= 2
+			self.number_count -= v1 + v2
 
 			# Severely punish 1-1 moves
 			if v1 == 1:
@@ -104,6 +115,7 @@ class Board:
 			self.board[y2][x2] = abs(v1 - v2)
 			self.lost_points += min(v1, v2)
 			self.tile_count -= 1
+			self.number_count -= 2 * min(v1, v2)
 
 			# Punish 1-moves
 			if v1 == 1:
@@ -115,15 +127,26 @@ class Board:
 				for dy in range(self.height):
 					for dx in range(self.width):
 						if self.board[dy][dx]:
+							self.number_count -= self.board[dy][dx]
 							self.lost_points += self.board[dy][dx]
 							self.board[dy][dx] = 0
 							self.tile_count -= 1
 							return
 			# Remove selected number remaining
 			else:
+				self.number_count -= self.board[y2][x2]
 				self.lost_points += self.board[y2][x2]
 				self.board[y2][x2] = 0
 				self.tile_count -= 1
+
+	# Returns positions of all numbers of a given value
+	def get_number_positions(self, number):
+		positions = []
+		for y in range(self.height):
+			for x in range(self.width):
+				if self.board[y][x] == number:
+					positions.append( (x,y) )
+		return positions
 
 	# Returns possible moves from x,y
 	def get_moves_at(self, x, y, remove_dups=False):
@@ -170,14 +193,43 @@ class Board:
 					all_moves += moves
 		return all_moves
 
+	# Returns optimal moves for the end game
+	def get_endgame_moves(self):
+		values = [self.board[y][x] for x in range(self.width) for y in range(self.height)]
+		value_count = {v: values.count(v) for v in values}
+
+		max_value = 0
+		for number in range(15,0,-1):
+			if value_count.get(number, 0) % 2 != 0:
+				max_value = number
+				break
+
+		#remaining = []
+		for number in range(15,0,-1):
+			count = value_count.get(number, 0)
+			if 2*number >= max_value:
+				if count >= 2:
+					p1, p2 = self.get_number_positions(number)[:2]
+					return [(p1, p2)]
+				#if count % 2 != 0:
+				#	remaining.append(number)
+			#else:
+			#	remaining += [number] * count
+
+		return self.get_all_moves()
+
 	# Returns moves to be searched on the board
 	def get_search_moves(self):
-		all_moves = self.get_all_moves()
+		if self.tile_count > 10:
+			all_moves = self.get_all_moves()
+		else:
+			all_moves = self.get_endgame_moves()
 
-		lowest_cost = 15
-		for move in all_moves:
-			lowest_cost = min(lowest_cost, self.get_move_cost(move))
-		all_moves = [move for move in all_moves if self.get_move_cost(move) <= lowest_cost + 4]
+		#lowest_cost = 15
+		#for move in all_moves:
+		#	lowest_cost = min(lowest_cost, self.get_move_cost(move))
+		#all_moves = [move for move in all_moves if self.get_move_cost(move) <= lowest_cost + 0]
+		#all_moves = all_moves[:2]
 		return all_moves
 
 	# Returns cost of a move
