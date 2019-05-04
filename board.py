@@ -244,11 +244,39 @@ class Board:
 		return min(v1, v2)
 
 	# Returns the minimum remaining cost, if all tiles were magically aligned
-	# TODO: Improve
 	def get_heuristic(self):
+		# Not admissible, but very fast
+		return self.tile_count
+
+		"""
+		values = [self.board[y][x] for x in range(self.width) for y in range(self.height)]
+		value_count = {v: values.count(v) for v in values}
+
+		self.print_board()
+		print()
+
+		max_value = 0
+		for number in range(15,0,-1):
+			if value_count.get(number, 0) % 2 != 0:
+				max_value = number
+				break
+
+		remaining = []
+		for number in range(15,0,-1):
+			count = value_count.get(number, 0)
+			if 2*number >= max_value:
+				if count % 2 != 0:
+					remaining.append(number)
+			else:
+				remaining += [number] * count
+
+		print(remaining)
+		exit()
+		"""
+
+		"""
 		values = [self.board[y][x] for x in range(self.width) for y in range(self.height)]
 		values.sort(reverse=True)
-
 		prev = None
 		lost = 0
 		for value in values:
@@ -261,3 +289,4 @@ class Board:
 			lost += prev
 
 		return lost + self.lost_points
+		"""
